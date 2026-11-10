@@ -36,8 +36,34 @@ PORT = int(CONFIG.get("OBSIDIAN_LINK_PORT", "8765"))
 VAULTS = {v.strip() for v in CONFIG.get("OBSIDIAN_LINK_VAULTS", "").split(",") if v.strip()}
 MAX_PATH = 2048
 
+MESSAGES = {
+    "en": {"open": "Open in Obsidian", "done": "You can close this tab."},
+    "ja": {"open": "Obsidian で開く", "done": "このタブは閉じてかまいません"},
+}
+DEFAULT_LANG = "en"
+
+
+def pick_lang(accept_language: str) -> str:
+    """Accept-Language から、MESSAGES にある言語のうち q がいちばん高いものを選ぶ。"""
+    best, best_q = DEFAULT_LANG, 0.0
+    for part in accept_language.split(","):
+        tag, _, params = part.strip().partition(";")
+        lang = tag.strip().lower().split("-")[0]
+        q = 1.0
+        for param in params.split(";"):
+            key, _, value = param.strip().partition("=")
+            if key == "q":
+                try:
+                    q = float(value)
+                except ValueError:
+                    q = 0.0
+        if lang in MESSAGES and q > best_q:
+            best, best_q = lang, q
+    return best
+
+
 PAGE = """<!doctype html>
-<html lang="ja"><head>
+<html lang="{lang}"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
@@ -48,9 +74,9 @@ a{{display:block;padding:1.2em 2em;border-radius:12px;background:#7c3aed;color:#
 p{{text-align:center;color:#999;word-break:break-all;padding:0 1em}}
 </style>
 </head><body><div>
-<a href="{url}">Obsidian で開く</a>
+<a href="{url}">{open}</a>
 <p>{title}</p>
-<p id="done" hidden>このタブは閉じてかまいません</p>
+<p id="done" hidden>{done}</p>
 </div>
 <script>
 // Obsidian に移ったあと（タブが隠れる）か、離れてから戻ってきたときにタブを閉じる。
@@ -93,7 +119,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(404, "not found")
         url = obsidian_url(vault, file)
         title = file.rsplit("/", 1)[-1].removesuffix(".md")
+        lang = pick_lang(self.headers.get("Accept-Language", ""))
         body = PAGE.format(
+            lang=lang,
+            open=html.escape(MESSAGES[lang]["open"]),
+            done=html.escape(MESSAGES[lang]["done"]),
             title=html.escape(title),
             url=html.escape(url),
             url_js='"' + url.replace("\\", "\\\\").replace('"', '\\"') + '"',
@@ -106,6 +136,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")
+        self.send_header("Vary", "Accept-Language")
         self.send_header("Referrer-Policy", "no-referrer")
         self.send_header("X-Robots-Tag", "noindex")
         self.send_header("X-Content-Type-Options", "nosniff")

@@ -4,9 +4,11 @@ English | [日本語](README.ja.md)
 
 A tiny web server that lets you open Obsidian notes from places where `obsidian://` links can't be clicked, such as chat apps.
 
-Opening `https://<host>/o/<vault>/<path relative to the vault>` returns an HTML page that forwards to `obsidian://open?vault=...&file=...`. For browsers that don't follow the redirect automatically, the page also shows an "Obsidian で開く" (Open in Obsidian) button.
+Opening `https://<host>/o/<vault>/<path relative to the vault>` returns an HTML page that forwards to `obsidian://open?vault=...&file=...`. For browsers that don't follow the redirect automatically, the page also shows an "Open in Obsidian" button.
 
-After the hand-off to Obsidian, the page closes its own tab with `window.close()`. It does this when the tab becomes hidden, or when you come back to it after it lost focus. Losing focus alone doesn't close the tab: on Windows, Chrome and Edge show a confirmation dialog for external apps, which fires `blur`, and closing the tab at that point would dismiss the dialog with it. Whether the tab can be closed depends on the browser; if it can't, the page shows "このタブは閉じてかまいません" (You can close this tab).
+The page text is shown in English or Japanese, chosen from the browser's `Accept-Language` (English when neither matches). To add a language, add an entry to `MESSAGES` in `server.py`.
+
+After the hand-off to Obsidian, the page closes its own tab with `window.close()`. It does this when the tab becomes hidden, or when you come back to it after it lost focus. Losing focus alone doesn't close the tab: on Windows, Chrome and Edge show a confirmation dialog for external apps, which fires `blur`, and closing the tab at that point would dismiss the dialog with it. Whether the tab can be closed depends on the browser; if it can't, the page shows "You can close this tab."
 
 - It never reads vault files; it only rebuilds the received path into the target URL
 - Only the configured vaults are accepted; anything else, and `/`, returns 404
