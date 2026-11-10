@@ -79,11 +79,13 @@ p{{text-align:center;color:#999;word-break:break-all;padding:0 1em}}
 <p id="done" hidden>{done}</p>
 </div>
 <script>
-// Obsidian に移ったあと（タブが隠れる）か、離れてから戻ってきたときにタブを閉じる。
+// Obsidian に移ったあと（タブが隠れる・フォーカスを失う）か、離れてから戻ってきたときにタブを閉じる。
 // 外部アプリの確認ダイアログを消さないよう、時間では閉じない。
-// フォーカスを失っただけでは閉じない（Windows の Chrome・Edge では確認ダイアログで blur が起き、
-// そこで閉じるとダイアログごとタブが消える）。
+// Windows では、フォーカスを失っただけでは閉じない（Chrome・Edge では確認ダイアログで blur が起き、
+// そこで閉じるとダイアログごとタブが消える）。Windows 以外では、Obsidian が前に出てもタブが
+// 隠れた扱いにならないことがあるので、blur で閉じる。
 // window.close() はブラウザが許したときだけ効く（Chrome などで、リンクから開いた新しいタブ）。
+const isWindows = /^Win/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "");
 let left = false;
 function tryClose() {{
   window.close();
@@ -93,7 +95,10 @@ document.addEventListener("visibilitychange", () => {{
   if (document.hidden) {{ left = true; tryClose(); }}
   else if (left) {{ tryClose(); }}
 }});
-window.addEventListener("blur", () => {{ left = true; }});
+window.addEventListener("blur", () => {{
+  left = true;
+  if (!isWindows) tryClose();
+}});
 window.addEventListener("focus", () => {{ if (left) tryClose(); }});
 location.href={url_js};
 </script>
