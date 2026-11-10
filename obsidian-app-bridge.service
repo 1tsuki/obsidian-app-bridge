@@ -1,0 +1,14 @@
+[Unit]
+Description=Bridge https links to the Obsidian app (obsidian://)
+
+[Service]
+# パスはクローンの場所に合わせる
+ExecStart=/usr/bin/python3 -I %h/src/github.com/1tsuki/obsidian-app-bridge/server.py
+Restart=on-failure
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=read-only
+
+[Install]
+WantedBy=default.target
